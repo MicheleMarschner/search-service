@@ -2,9 +2,10 @@ const geocoder = require('../utils/geocoder');
 
 const advancedSearch = (model) => async (req, res, next) => {
     let query;
+    let textQuery;
 
     const reqQuery = {...req.query};
-    const removeFields = ['select', 'sort', 'page', 'limit', 'zipcode', 'distance', 'title', 'short_description', 'body'];
+    const removeFields = ['select', 'sort', 'page', 'limit', 'zipcode', 'distance', 'text'];
 
     removeFields.forEach(param => delete reqQuery[param]);
 
@@ -14,7 +15,7 @@ const advancedSearch = (model) => async (req, res, next) => {
 
     //query = model.find(JSON.parse(queryStr));
     query = JSON.parse(queryStr);
-    
+
     // Search inRadius
     if(req.query.zipcode & req.query.distance) {
         const {zipcode, distance} = req.query;
@@ -47,34 +48,35 @@ const advancedSearch = (model) => async (req, res, next) => {
 
 
     //Full Text Search 
+    if(req.query.text) {
 
-    if(req.query.title || req.query.short_description || req.query.body) {
+       textQuery = model.find(
+            { $text: { $search: `${req.query.text}`} },
+            { score: { $meta: "textScore" } }
+         ).sort( { score: { $meta: "textScore" } } )
+
+        console.log(textQuery);
+        /*
         model.aggregate([
             {
                 $search: {
-                  "compound": {
-                    "must": [ {
-                      "text": {
-                         "query": ["Hawaii", "Alaska"],
-                         "path": "plot"
-                      },
+                  
+                    "text": {
+                         "query": `${req.query.text}`,
+                         'path': ['short_description', 'title', 'body']
                     },
-                    {
-                      "regex": {
-                         "query": "([0-9]{4})",
-                         "path": "plot",
-                         "allowAnalyzedField": true
-                      }
-                    } ],
-                  }
-                }
-            },
-            {
-                $limit: 5
-            }  
+                },
+            }
         ]);
 
+         "phrase": {
+       "query": "<search-string>",
+       "path": ['short_description', 'title', 'body'],
+       "score": <options>,
+       "slop": <distance-number>
+     }
 
+*/
         
     }
 
@@ -93,7 +95,7 @@ const advancedSearch = (model) => async (req, res, next) => {
     }
     */
     // Executing query
-    req.advancedResults = query;
+    req.advancedResults = textQuery;
 
   /*
     // Pagination result

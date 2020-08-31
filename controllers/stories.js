@@ -6,7 +6,7 @@ const asyncHandler = require('../middleware/asyncHandler');
 //  @access Private
 exports.getStories = asyncHandler(async (req, res, next) => {
 
-    const stories = await req.advancedResults;
+    const stories = await req.advancedResults.select('title body');
     
     return res.status(200).json({
         success: true,
